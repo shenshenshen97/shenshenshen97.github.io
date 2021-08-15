@@ -1,0 +1,88 @@
+---
+title: 【C#Winform应用程序】多线程和socket网络编程
+layout: post
+categories: 'C#'
+tags: C# 高级特性
+---
+
+## Socket网络编程简介
+
+Socket程序间的“电话机”。socket的英文原意是“孔”或“插座”。作为<b>进程通信机制</b>，取后一种意思。通常也称作“套接字”，用于描述IP地址和端口，是一个通信链的句柄。（其实就是两个程序通信用的）。
+
+在Internet上有很多主机，运行着多个服务软件，同时提供几种服务。每种服务都打开了一个Socket，并绑定到一个端口上，不同的端口对应于不同的服务（应用程序）。
+
+例如：http使用80端口，ftp使用21端口，smtp使用25端口
+
+Socket有两种类型：
+* 流式socket（stream）
+是一种面向连接的socket，针对于面向连接的TCP服务应用，安全，但是效率低。
+
+* 数据报式socket（datagram）
+是一种无连接的socket，对应于无连接的UDP服务应用，不安全（丢失，顺序混乱，在接受端要分析重排及要求重发），但效率高。
+
+## socket通信基本流程
+
+### 经验积累
+#### telnet命令
+测试IP端口是否畅通，CMD：
+* telnet + IP + 端口号
+#### as关键字
+作为类型转换
+#### 追加文本
+使用richTextBox控件的AppendText(str + "\r\n")方法，追加文本显示。
+
+### socket流程
+
+#### 服务器端
+
+服务端首先通过Socket类建立一个负责通信的socket对象，然后使用Bind()方法绑定需要监听的IP地址和端口号。接着调用socket对象的Listen()方法启用监听，监听从客户端发来的消息，Listen(10)代表可同时接受10个客户端的消息，并发超过10个时，10之外的请求进行排队等候。
+
+```c#
+
+private void button1_Click(object sender, EventArgs e)
+{
+    //创建负责监听的socket
+    Socket socketWatcher = new Socket(AddressFamily.InterNetwork,SocketType.Stream,ProtocolType.Tcp);
+    //创建ip地址和端口号对象
+    IPAddress ip = IPAddress.Any;//IPAddress.Parse(textBox1.Text);
+    IPEndPoint point = new IPEndPoint(ip, Convert.ToInt32(textBox2.Text));
+    //绑定socket和端口号
+    socketWatcher.Bind(point);
+    showMsg("监听成功");
+
+    //设置监听队列
+    socketWatcher.Listen(10);   
+    Thread th = new Thread(Listen);
+    th.IsBackground = true;
+    th.Start(socketWatcher);
+}
+
+```
+
+一旦和客户端建立连接，服务端就需要不断接受客户端传来的消息，这里是使用socket对象的Accept()方法，并且是嵌套在一个无线循环中，表示需要持续的接受客户端的消息。在GUI编程中，因为在执行到这里时，持续不断的Accept()会使GUI界面进入假死状态无法移动和处理点击事件，所以需要开启一个新线程来负责这个无限循环的接收。
+
+```c#
+void Listen(Object o)
+{
+    Socket socketWatcher = o as Socket ;
+    while (true)
+    {
+        try
+        {
+            //负责监听的socket来接受客户端的连接,创建通信socket
+            Socket socketSend = socketWatcher.Accept();//在这用区域socket,不要用全局，
+            //存入字典
+            dicSocket.Add(socketSend.RemoteEndPoint.ToString(),socketSend);
+            //放入下拉框
+            comboBox1.Items.Add(socketSend.RemoteEndPoint.ToString());
+            showMsg(socketSend.RemoteEndPoint.ToString() + "连接成功");
+            //消息接受线程
+            Thread th = new Thread(Receive);
+            th.IsBackground = true;
+            th.Start(socketSend);
+        }
+        catch { }
+    }
+    
+}
+```
