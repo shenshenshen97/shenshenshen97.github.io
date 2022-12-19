@@ -21,4 +21,4 @@ NexT is built for easily use with elegant appearance. First things first, always
 ## 记录 
 
 * 2020-2-2： 开始使用README文件
-* 2020-4-13:  可以添加laTex的公式，但也有一些限制，其他的示例图还是做成图片放到图床上比较好# lswda.github.io
+* 2020-4-13:  可以添加laTex的公式，但也有一些限制，其他的示例图还是做成图片放到图床上比较好# s.github.io
